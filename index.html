@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中海原山水电气消费记录</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#060b18;
+  --bg-card:rgba(10,18,40,0.85);
+  --bg-card-hover:rgba(14,26,56,0.9);
+  --text:#c8d6e5;
+  --text-dim:#5a6a8a;
+  --cyan:#00d4ff;
+  --cyan-dim:rgba(0,212,255,0.15);
+  --purple:#7c3aed;
+  --green:#10b981;
+  --orange:#f59e0b;
+  --red:#ef4444;
+  --border:rgba(0,212,255,0.12);
+  --shadow:0 0 30px rgba(0,212,255,0.06);
+  --radius:12px;
+  --font:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono','Consolas',monospace;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);background:var(--bg-deep);color:var(--text);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(124,58,237,0.03) 0%, transparent 60%);
+  animation:bgShift 20s ease-in-out infinite alternate;
+}
+@keyframes bgShift{
+  0%{background-position:0% 0%}
+  50%{background-position:50% 50%}
+  100%{background-position:100% 100%}
+}
+body::after{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,0.008) 2px,rgba(0,255,255,0.008) 4px);
+  pointer-events:none;z-index:1;
+}
+#particleCanvas{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--cyan-dim);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.3)}
+
+/* ── scanline animation ── */
+@keyframes scanline{
+  0%{transform:translateY(-100%)}
+  100%{transform:translateY(100vh)}
+}
+
+/* ── header ── */
+.header{
+  position:relative;z-index:2;text-align:center;
+  padding:40px 20px 20px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(0,212,255,0.04) 0%,transparent 100%);
+}
+.header::after{
+  content:'';position:absolute;bottom:-1px;left:10%;width:80%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+}
+.header h1{
+  font-size:32px;font-weight:700;
+  background:linear-gradient(135deg,#00d4ff 0%,#7c3aed 50%,#00d4ff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;letter-spacing:4px;
+  animation:glow 3s ease-in-out infinite alternate;
+}
+@keyframes glow{
+  0%{filter:drop-shadow(0 0 8px rgba(0,212,255,0.3))}
+  100%{filter:drop-shadow(0 0 20px rgba(0,212,255,0.6))}
+}
+.header .sub{
+  margin-top:8px;font-size:13px;color:var(--text-dim);letter-spacing:6px;
+}
+.header .sub span{color:var(--cyan);}
+
+/* ── footer ── */
+.footer{
+  position:relative;z-index:2;text-align:center;
+  padding:24px 20px 32px;font-size:12px;color:var(--text-dim);
+  letter-spacing:1px;border-top:1px solid var(--border);
+  margin-top:12px;
+}
+.footer strong{color:var(--cyan);font-weight:500;}
+.footer::before{
+  content:'';position:absolute;top:-1px;left:30%;width:40%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+}
+
+/* ── nav tabs ── */
+.nav{
+  position:relative;z-index:2;display:flex;justify-content:center;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,11,24,0.8);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:10;
+}
+.nav button{
+  padding:14px 28px;font-size:14px;font-weight:500;cursor:pointer;
+  background:transparent;border:none;color:var(--text-dim);
+  transition:all .3s;position:relative;letter-spacing:1px;
+  font-family:var(--font);
+}
+.nav button:hover{color:var(--text)}
+.nav button.active{color:var(--cyan)}
+.nav button.active::after{
+  content:'';position:absolute;bottom:0;left:20%;width:60%;height:2px;
+  background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+  border-radius:1px;animation:navPulse 2s ease-in-out infinite;
+}
+@keyframes navPulse{
+  0%,100%{opacity:1}
+  50%{opacity:0.5}
+}
+
+/* ── container ── */
+.main{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:24px 20px 80px}
+
+/* ── section / cards ── */
+.section{display:none;animation:fadeIn .4s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px 28px;margin-bottom:20px;
+  backdrop-filter:blur(8px);transition:all .3s;
+}
+.card:hover{border-color:rgba(0,212,255,0.2);box-shadow:var(--shadow)}
+.card-title{
+  font-size:16px;font-weight:600;color:var(--cyan);
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.card-title .badge{
+  font-size:10px;padding:1px 10px;border-radius:8px;
+  background:var(--cyan-dim);color:var(--cyan);font-weight:500;
+}
+
+/* ── form elements ── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:var(--text-dim);letter-spacing:1px;font-weight:500}
+.form-group .input-wrap{position:relative}
+.form-group input, .form-group select{
+  width:100%;padding:10px 12px;font-size:14px;
+  background:rgba(0,212,255,0.04);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);outline:none;
+  transition:all .3s;font-family:var(--mono);
+}
+.form-group input:focus, .form-group select:focus{
+  border-color:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,0.1);
+}
+.form-group input:read-only{
+  color:var(--cyan);background:rgba(0,212,255,0.06);
+  border-color:rgba(0,212,255,0.2);
+}
+.form-group select{cursor:pointer;appearance:none;font-family:var(--font)}
+.form-group .unit{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-size:11px;color:var(--text-dim);
+}
+
+/* ── type tabs ── */
+.type-tabs{display:flex;gap:8px;margin-bottom:16px}
+.type-tabs button{
+  padding:8px 20px;font-size:13px;font-weight:500;cursor:pointer;
+  background:rgba(0,212,255,0.04);border:1px solid var(--border);
+  border-radius:8px;color:var(--text-dim);transition:all .3s;
+  font-family:var(--font);
+}
+.type-tabs button:hover{border-color:rgba(0,212,255,0.3);color:var(--text)}
+.type-tabs button.active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 15px rgba(0,212,255,0.08);}
+
+/* ── buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 20px;font-size:13px;font-weight:500;cursor:pointer;
+  border:1px solid var(--border);border-radius:8px;
+  background:rgba(0,212,255,0.04);color:var(--text);
+  transition:all .3s;font-family:var(--font);
+}
+.btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 15px rgba(0,212,255,0.08);}
+.btn-primary{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan)}
+.btn-primary:hover{background:rgba(0,212,255,0.2);box-shadow:0 0 20px rgba(0,212,255,0.15);}
+.btn-danger{border-color:rgba(239,68,68,0.3);color:var(--red)}
+.btn-danger:hover{border-color:var(--red);box-shadow:0 0 15px rgba(239,68,68,0.1);}
+.btn-success{border-color:rgba(16,185,129,0.3);color:var(--green)}
+.btn-success:hover{border-color:var(--green);box-shadow:0 0 15px rgba(16,185,129,0.1);}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+/* ── total display ── */
+.total-box{
+  margin-top:16px;padding:14px 18px;
+  background:rgba(0,212,255,0.04);border:1px solid var(--border);
+  border-radius:8px;display:flex;align-items:center;justify-content:space-between;
+}
+.total-box .label{font-size:13px;color:var(--text-dim)}
+.total-box .value{
+  font-size:24px;font-weight:700;color:var(--cyan);
+  font-family:var(--mono);
+}
+
+/* ── history filters ── */
+.filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filter-row select{padding:8px 12px;background:rgba(0,212,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;cursor:pointer;font-family:var(--font)}
+.filter-row select:focus{border-color:var(--cyan)}
+
+/* ── table ── */
+.table-wrap{overflow-x:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  padding:10px 12px;text-align:left;font-weight:500;color:var(--text-dim);
+  border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1px;
+  white-space:nowrap;
+}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(0,212,255,0.04);color:var(--text)}
+tbody tr:hover{background:rgba(0,212,255,0.03)}
+tbody tr.frozen td{color:var(--text-dim)}
+.frozen-badge{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:11px;background:rgba(0,212,255,0.08);color:var(--cyan);
+}
+.unfrozen-badge{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:11px;background:rgba(239,68,68,0.08);color:var(--red);
+}
+
+/* ── stats summary ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat-item{
+  padding:16px;text-align:center;border-radius:8px;
+  background:rgba(0,212,255,0.03);border:1px solid var(--border);
+  transition:all .3s;
+}
+.stat-item:hover{border-color:rgba(0,212,255,0.2)}
+.stat-item .num{font-size:22px;font-weight:700;color:var(--cyan);font-family:var(--mono)}
+.stat-item .lbl{font-size:11px;color:var(--text-dim);margin-top:4px;letter-spacing:1px}
+
+/* ── charts ── */
+.chart-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chart-tabs button{
+  padding:6px 16px;font-size:12px;cursor:pointer;
+  background:rgba(0,212,255,0.04);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-dim);transition:all .3s;font-family:var(--font);
+}
+.chart-tabs button:hover{border-color:rgba(0,212,255,0.3)}
+.chart-tabs button.active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan)}
+.chart-box{width:100%;height:400px;border-radius:8px;background:rgba(0,0,0,0.2)}
+
+/* ── data management ── */
+.mgmt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.mgmt-card{
+  padding:20px;border:1px solid var(--border);border-radius:8px;
+  background:rgba(0,212,255,0.02);text-align:center;
+}
+.mgmt-card h3{font-size:14px;color:var(--text);margin-bottom:8px}
+.mgmt-card p{font-size:12px;color:var(--text-dim);margin-bottom:14px}
+.mgmt-card .icon{font-size:32px;margin-bottom:8px;display:block}
+
+/* ── toast ── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:100;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:12px 20px;border-radius:8px;font-size:13px;
+  backdrop-filter:blur(12px);border:1px solid;animation:slideIn .3s ease;
+  min-width:200px;
+}
+.toast.success{background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.3);color:var(--green)}
+.toast.error{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.toast.info{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.2);color:var(--cyan)}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── modal ── */
+.modal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:50;
+  display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px;max-width:420px;width:90%;animation:fadeIn .3s ease;
+}
+.modal h3{color:var(--cyan);margin-bottom:12px;font-size:16px}
+.modal p{color:var(--text-dim);font-size:13px;margin-bottom:16px}
+.modal .btn-group{justify-content:flex-end;margin-top:0}
+
+/* ── responsive ── */
+@media(max-width:768px){
+  .nav button{padding:12px 14px;font-size:12px}
+  .header h1{font-size:22px;letter-spacing:2px}
+  .form-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .card{padding:18px 16px}
+  .chart-box{height:280px}
+  .mgmt-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .header{padding:24px 12px 16px}
+  .header h1{font-size:18px}
+  .nav button{padding:10px 10px;font-size:11px}
+  .main{padding:16px 10px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <h1>⚡ 中海原山 · 水电气消费记录</h1>
+  <div class="sub"><span>◈</span>  ZHONG HAI YUAN SHAN UTILITY TRACKER  <span>◈</span></div>
+</div>
+
+<!-- ===== NAV ===== -->
+<div class="nav" id="navTabs">
+  <button class="active" data-tab="entry">📝 录入</button>
+  <button data-tab="history">📊 历史数据</button>
+  <button data-tab="stats">📈 统计分析</button>
+  <button data-tab="manage">⚙️ 数据管理</button>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- ──── SECTION: ENTRY ──── -->
+  <div class="section active" id="sec-entry">
+    <div class="card">
+      <div class="card-title">📋 录入消费记录 <span class="badge">DATA ENTRY</span></div>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
+        <div class="form-group">
+          <label>年份</label>
+          <select id="entryYear"></select>
+        </div>
+        <div class="form-group">
+          <label>月份</label>
+          <select id="entryMonth">
+            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+            <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="type-tabs" id="typeTabs">
+        <button class="active" data-type="water">💧 水</button>
+        <button data-type="electricity">⚡ 电</button>
+        <button data-type="gas">🔥 气</button>
+      </div>
+
+      <!-- Water form -->
+      <div class="entry-form" id="form-water">
+        <div class="form-grid">
+          <div class="form-group"><label>用水量</label><div class="input-wrap"><input type="number" id="wUsage" step="0.01" min="0" placeholder="0.00"><span class="unit">吨</span></div></div>
+          <div class="form-group"><label>单价</label><div class="input-wrap"><input type="number" id="wPrice" step="0.01" min="0" placeholder="0.00"><span class="unit">元/吨</span></div></div>
+          <div class="form-group"><label>水费金额</label><div class="input-wrap"><input type="text" id="wAmount" readonly placeholder="自动计算"><span class="unit">元</span></div></div>
+          <div class="form-group"><label>垃圾处理费</label><div class="input-wrap"><input type="number" id="wGarbage" step="0.01" min="0" placeholder="0.00"><span class="unit">元</span></div></div>
+        </div>
+        <div class="total-box">
+          <span class="label">💧 合计金额（水费 + 垃圾处理费）</span>
+          <span class="value" id="wTotal">0.00 元</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveRecord('water')">✅ 保存记录</button>
+        </div>
+      </div>
+
+      <!-- Electricity form -->
+      <div class="entry-form" id="form-electricity" style="display:none">
+        <div class="form-grid">
+          <div class="form-group"><label>用电量</label><div class="input-wrap"><input type="number" id="eUsage" step="0.01" min="0" placeholder="0.00"><span class="unit">度</span></div></div>
+          <div class="form-group"><label>单价</label><div class="input-wrap"><input type="number" id="ePrice" step="0.01" min="0" placeholder="0.00"><span class="unit">元/度</span></div></div>
+          <div class="form-group"><label>电费金额</label><div class="input-wrap"><input type="text" id="eAmount" readonly placeholder="自动计算"><span class="unit">元</span></div></div>
+        </div>
+        <div class="total-box">
+          <span class="label">⚡ 合计金额</span>
+          <span class="value" id="eTotal">0.00 元</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveRecord('electricity')">✅ 保存记录</button>
+        </div>
+      </div>
+
+      <!-- Gas form -->
+      <div class="entry-form" id="form-gas" style="display:none">
+        <div class="form-grid">
+          <div class="form-group"><label>用气量</label><div class="input-wrap"><input type="number" id="gUsage" step="0.01" min="0" placeholder="0.00"><span class="unit">m³</span></div></div>
+          <div class="form-group"><label>单价</label><div class="input-wrap"><input type="number" id="gPrice" step="0.01" min="0" placeholder="0.00"><span class="unit">元/m³</span></div></div>
+          <div class="form-group"><label>气费金额</label><div class="input-wrap"><input type="text" id="gAmount" readonly placeholder="自动计算"><span class="unit">元</span></div></div>
+        </div>
+        <div class="total-box">
+          <span class="label">🔥 合计金额</span>
+          <span class="value" id="gTotal">0.00 元</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveRecord('gas')">✅ 保存记录</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──── SECTION: HISTORY ──── -->
+  <div class="section" id="sec-history">
+    <div class="card">
+      <div class="card-title">📊 历史数据 <span class="badge">HISTORY</span></div>
+      <div class="filter-row">
+        <select id="histYear"><option value="">全部年份</option></select>
+        <select id="histType">
+          <option value="">全部类型</option>
+          <option value="water">💧 水</option>
+          <option value="electricity">⚡ 电</option>
+          <option value="gas">🔥 气</option>
+        </select>
+        <button class="btn btn-sm" onclick="freezeAll()">🔒 冻结全部可见</button>
+        <button class="btn btn-sm" onclick="unfreezeAll()">🔓 解冻全部可见</button>
+        <button class="btn btn-sm" onclick="deleteSelected()">🗑️ 删除选中</button>
+      </div>
+      <div class="table-wrap" id="historyTable"></div>
+    </div>
+  </div>
+
+  <!-- ──── SECTION: STATISTICS ──── -->
+  <div class="section" id="sec-stats">
+    <div class="card">
+      <div class="card-title">📈 统计分析 <span class="badge">ANALYSIS</span></div>
+      <div class="filter-row">
+        <select id="statsType">
+          <option value="all">全部类型</option>
+          <option value="water">💧 水</option>
+          <option value="electricity">⚡ 电</option>
+          <option value="gas">🔥 气</option>
+        </select>
+      </div>
+    </div>
+    <!-- stat summary -->
+    <div class="stat-grid" id="statsSummary"></div>
+    <!-- chart tabs -->
+    <div class="card">
+      <div class="chart-tabs" id="chartTabs">
+        <button class="active" data-chart="trend">📈 月度趋势</button>
+        <button data-chart="usage">📈 用量趋势</button>
+        <button data-chart="pie">🥧 费用分布</button>
+        <button data-chart="yoy">📉 同比对比</button>
+      </div>
+      <div class="chart-box" id="chartMain"></div>
+    </div>
+  </div>
+
+  <!-- ──── SECTION: MANAGE ──── -->
+  <div class="section" id="sec-manage">
+    <div class="card">
+      <div class="card-title">⚙️ 数据管理 <span class="badge">MANAGEMENT</span></div>
+      <div class="mgmt-grid">
+        <div class="mgmt-card">
+          <span class="icon">📦</span>
+          <h3>备份数据</h3>
+          <p>将所有消费数据导出为 JSON 文件</p>
+          <button class="btn btn-primary btn-sm" onclick="exportData()">⬇ 导出备份</button>
+        </div>
+        <div class="mgmt-card">
+          <span class="icon">📥</span>
+          <h3>导入数据</h3>
+          <p>支持 JSON / Excel(.xls/.xlsx) 格式</p>
+          <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">📂 选择文件</button>
+          <input type="file" id="importFile" accept=".json,.xlsx,.xls" style="display:none" onchange="importData(event)">
+        </div>
+        <div class="mgmt-card">
+          <span class="icon">📋</span>
+          <h3>下载模板</h3>
+          <p>获取 Excel 导入模板（含格式说明）</p>
+          <button class="btn btn-sm" onclick="downloadTemplate()">⬇ Excel 模板</button>
+        </div>
+        <div class="mgmt-card">
+          <span class="icon">ℹ️</span>
+          <h3>数据概览</h3>
+          <p id="dataSummary">加载中...</p>
+        </div>
+        <div class="mgmt-card">
+          <span class="icon">⚠️</span>
+          <h3>重置数据</h3>
+          <p>清空所有消费记录（不可恢复）</p>
+          <button class="btn btn-danger btn-sm" onclick="confirmClear()">🗑 清空数据</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- footer -->
+<div class="footer">
+  © 2025 — 2030 <strong>Lewis Tsui</strong>. All rights reserved.
+</div>
+
+<!-- modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">确认</h3>
+    <p id="modalMsg">确定执行此操作？</p>
+    <div class="btn-group">
+      <button class="btn btn-sm" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger btn-sm" id="modalConfirmBtn" onclick="closeModal()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================
+//  DATA STORE
+// ============================================================
+const STORE_KEY = 'zhonghaiyuanshan_utilities';
+let appData = { water: [], electricity: [], gas: [] };
+let modalCallback = null;
+let currentEditId = null;
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) appData = JSON.parse(raw);
+  }catch(e){}
+  // ensure each record has id
+  ['water','electricity','gas'].forEach(t=>{
+    appData[t] = (appData[t]||[]).map(r=>{
+      if(!r.id) r.id = Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      return r;
+    });
+  });
+}
+function saveData(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(appData));
+}
+
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+
+function addRecord(type, record){
+  record.id = genId();
+  record.frozen = false;
+  appData[type].push(record);
+  saveData();
+}
+
+function updateRecord(type, id, updates){
+  const idx = appData[type].findIndex(r=>r.id===id);
+  if(idx>-1){Object.assign(appData[type][idx], updates); saveData();}
+}
+
+function deleteRecord(type, id){
+  appData[type] = appData[type].filter(r=>r.id!==id);
+  saveData();
+}
+
+function toggleFreeze(type, id){
+  const r = appData[type].find(r=>r.id===id);
+  if(r){r.frozen = !r.frozen; saveData();}
+}
+
+// ============================================================
+//  TOAST & MODAL
+// ============================================================
+function toast(msg, type='info'){
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},2500);
+}
+
+function showModal(title, msg, cb){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent = msg;
+  document.getElementById('modalOverlay').classList.add('show');
+  modalCallback = cb;
+  document.getElementById('modalConfirmBtn').onclick = ()=>{closeModal(); if(cb) cb();};
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');modalCallback=null}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+document.querySelectorAll('#navTabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#navTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById('sec-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='history') renderHistory();
+    if(btn.dataset.tab==='stats') renderCharts();
+    if(btn.dataset.tab==='manage') updateMgmtSummary();
+  });
+});
+
+// ============================================================
+//  TYPE SWITCH (entry)
+// ============================================================
+document.querySelectorAll('#typeTabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#typeTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.entry-form').forEach(f=>f.style.display='none');
+    document.getElementById('form-'+btn.dataset.type).style.display='block';
+  });
+});
+
+// ============================================================
+//  AUTO CALCULATION (entry)
+// ============================================================
+function calcWater(){
+  const u = parseFloat(document.getElementById('wUsage').value)||0;
+  const p = parseFloat(document.getElementById('wPrice').value)||0;
+  const g = parseFloat(document.getElementById('wGarbage').value)||0;
+  const amt = u*p;
+  document.getElementById('wAmount').value = amt.toFixed(2);
+  document.getElementById('wTotal').textContent = (amt+g).toFixed(2)+' 元';
+}
+function calcElectricity(){
+  const u = parseFloat(document.getElementById('eUsage').value)||0;
+  const p = parseFloat(document.getElementById('ePrice').value)||0;
+  const amt = u*p;
+  document.getElementById('eAmount').value = amt.toFixed(2);
+  document.getElementById('eTotal').textContent = amt.toFixed(2)+' 元';
+}
+function calcGas(){
+  const u = parseFloat(document.getElementById('gUsage').value)||0;
+  const p = parseFloat(document.getElementById('gPrice').value)||0;
+  const amt = u*p;
+  document.getElementById('gAmount').value = amt.toFixed(2);
+  document.getElementById('gTotal').textContent = amt.toFixed(2)+' 元';
+}
+
+['wUsage','wPrice','wGarbage'].forEach(id=>document.getElementById(id).addEventListener('input',calcWater));
+['eUsage','ePrice'].forEach(id=>document.getElementById(id).addEventListener('input',calcElectricity));
+['gUsage','gPrice'].forEach(id=>document.getElementById(id).addEventListener('input',calcGas));
+
+// ============================================================
+//  SAVE RECORD (unified: handles create, edit, duplicate)
+// ============================================================
+function buildRecord(type, year, month){
+  if(type==='water'){
+    const usage = parseFloat(document.getElementById('wUsage').value);
+    const price = parseFloat(document.getElementById('wPrice').value);
+    const garbage = parseFloat(document.getElementById('wGarbage').value)||0;
+    if(!usage||!price) return null;
+    const amount = usage*price;
+    return {year,month,usage,unitPrice:price,amount,garbageFee:garbage,total:amount+garbage};
+  }else{
+    const uEl = document.getElementById(type==='electricity'?'eUsage':'gUsage');
+    const pEl = document.getElementById(type==='electricity'?'ePrice':'gPrice');
+    const usage = parseFloat(uEl.value);
+    const price = parseFloat(pEl.value);
+    if(!usage||!price) return null;
+    const amount = usage*price;
+    return {year,month,usage,unitPrice:price,amount};
+  }
+}
+
+function saveRecord(type){
+  const year = parseInt(document.getElementById('entryYear').value);
+  const month = parseInt(document.getElementById('entryMonth').value);
+  if(!year){toast('请选择年份','error');return}
+  const record = buildRecord(type, year, month);
+  if(!record){toast('请填写用量和单价','error');return}
+
+  // Edit mode — update existing record
+  if(currentEditId){
+    const idx = appData[type].findIndex(r=>r.id===currentEditId);
+    if(idx>-1){
+      appData[type][idx] = {...appData[type][idx], ...record};
+      saveData();
+      toast('记录更新成功','success');
+      currentEditId = null;
+      clearForm(type);
+      return;
+    }
+    currentEditId = null;
+  }
+
+  // Duplicate check — same year+month+type, not frozen
+  const dup = appData[type].find(r=>r.year===year&&r.month===month&&!r.frozen);
+  if(dup){
+    const name = {water:'水费',electricity:'电费',gas:'燃气费'}[type];
+    showModal('记录已存在',`${year}年${month}月的${name}记录已存在，是否覆盖？`,()=>{
+      appData[type] = appData[type].filter(r=>r.id!==dup.id);
+      addRecord(type, record);
+      toast(`${name}记录保存成功`,'success');
+      clearForm(type);
+    });
+    return;
+  }
+
+  // New record
+  addRecord(type, record);
+  toast({water:'水费',electricity:'电费',gas:'燃气费'}[type]+'记录保存成功','success');
+  clearForm(type);
+}
+
+function clearForm(type){
+  if(type==='water'){
+    document.getElementById('wUsage').value='';
+    document.getElementById('wPrice').value='';
+    document.getElementById('wGarbage').value='';
+    document.getElementById('wAmount').value='';
+    document.getElementById('wTotal').textContent='0.00 元';
+  }else if(type==='electricity'){
+    document.getElementById('eUsage').value='';
+    document.getElementById('ePrice').value='';
+    document.getElementById('eAmount').value='';
+    document.getElementById('eTotal').textContent='0.00 元';
+  }else if(type==='gas'){
+    document.getElementById('gUsage').value='';
+    document.getElementById('gPrice').value='';
+    document.getElementById('gAmount').value='';
+    document.getElementById('gTotal').textContent='0.00 元';
+  }
+}
+
+// ============================================================
+//  HISTORY
+// ============================================================
+function renderHistory(){
+  const year = document.getElementById('histYear').value;
+  const type = document.getElementById('histType').value;
+  let all = [];
+  const types = type ? [type] : ['water','electricity','gas'];
+  const labels = {water:'💧 水',electricity:'⚡ 电',gas:'🔥 气'};
+  types.forEach(t=>{
+    appData[t].forEach(r=>{
+      if(!year||r.year==parseInt(year)) all.push({...r,_type:t,_label:labels[t]});
+    });
+  });
+  all.sort((a,b)=>b.year-a.year||b.month-a.month);
+
+  if(!all.length){
+    document.getElementById('historyTable').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-dim)">暂无数据</div>';
+    return;
+  }
+
+  // determine columns
+  const hasWater = all.some(r=>r._type==='water');
+  let html = `<table><thead><tr>
+    <th style="width:30px"><input type="checkbox" id="selectAllHist" onchange="toggleSelectAll(this)"></th>
+    <th>类型</th><th>年份</th><th>月份</th><th>用量</th><th>单价</th><th>金额</th>`;
+  if(hasWater) html += `<th>垃圾费</th><th>合计</th>`;
+  html += `<th>状态</th><th>操作</th></tr></thead><tbody>`;
+
+  all.forEach(r=>{
+    const frozen = r.frozen;
+    const unitMap = {water:'吨',electricity:'度',gas:'m³'};
+    const priceUnit = {water:'元/吨',electricity:'元/度',gas:'元/m³'};
+    const u = unitMap[r._type]||'';
+    const pu = priceUnit[r._type]||'';
+    html += `<tr class="${frozen?'frozen':''}">
+      <td><input type="checkbox" class="hist-check" data-type="${r._type}" data-id="${r.id}" ${frozen?'disabled':''}></td>
+      <td>${r._label}</td>
+      <td>${r.year}</td>
+      <td>${r.month}月</td>
+      <td>${(r.usage||0).toFixed(2)} ${u}</td>
+      <td>${(r.unitPrice||0).toFixed(2)} ${pu}</td>
+      <td>${(r.amount||0).toFixed(2)} 元</td>`;
+    if(hasWater){
+      html += `<td>${r._type==='water'?(r.garbageFee||0).toFixed(2):'-'} 元</td>`;
+      html += `<td>${r._type==='water'?(r.total||0).toFixed(2):'-'} 元</td>`;
+    }
+    html += `<td>${frozen?'<span class="frozen-badge">🔒 已冻结</span>':'<span class="unfrozen-badge">🔓 未冻结</span>'}</td>
+      <td>
+        <button class="btn btn-sm" onclick="${frozen?`unfreezeRec('${r._type}','${r.id}')`:`freezeRec('${r._type}','${r.id}')`}" style="padding:3px 8px;font-size:11px">${frozen?'🔓 解冻':'🔒 冻结'}</button>
+        ${frozen?'':`<button class="btn btn-sm" onclick="editRecord('${r._type}','${r.id}')" style="padding:3px 8px;font-size:11px">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRec('${r._type}','${r.id}')" style="padding:3px 8px;font-size:11px">🗑️</button>`}
+      </td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('historyTable').innerHTML = html;
+}
+
+function freezeRec(type,id){toggleFreeze(type,id);renderHistory();toast('已冻结','info')}
+function unfreezeRec(type,id){toggleFreeze(type,id);renderHistory();toast('已解冻','info')}
+
+function deleteRec(type,id){
+  showModal('删除确认','确定删除此记录吗？此操作不可恢复。',()=>{
+    deleteRecord(type,id);
+    renderHistory();
+    toast('已删除','info');
+  });
+}
+
+function toggleSelectAll(master){
+  document.querySelectorAll('.hist-check:not(:disabled)').forEach(c=>c.checked=master.checked);
+}
+
+function freezeAll(){
+  document.querySelectorAll('.hist-check:not(:disabled)').forEach(c=>{
+    if(c.checked){
+      const r = appData[c.dataset.type].find(x=>x.id===c.dataset.id);
+      if(r) r.frozen = true;
+    }
+  });
+  saveData();renderHistory();toast('已冻结选中记录','info');
+}
+
+function unfreezeAll(){
+  document.querySelectorAll('.hist-check').forEach(c=>{
+    if(c.checked){
+      const r = appData[c.dataset.type].find(x=>x.id===c.dataset.id);
+      if(r) r.frozen = false;
+    }
+  });
+  saveData();renderHistory();toast('已解冻选中记录','info');
+}
+
+function deleteSelected(){
+  const checked = document.querySelectorAll('.hist-check:not(:disabled):checked');
+  if(!checked.length){toast('请先选择记录','error');return}
+  showModal('批量删除','确定删除选中的 '+checked.length+' 条记录？',()=>{
+    checked.forEach(c=>{
+      appData[c.dataset.type] = appData[c.dataset.type].filter(x=>x.id!==c.dataset.id);
+    });
+    saveData();renderHistory();toast('已删除 '+checked.length+' 条记录','info');
+  });
+}
+
+function editRecord(type,id){
+  const r = appData[type].find(x=>x.id===id);
+  if(!r||r.frozen) return;
+  currentEditId = id;
+  // switch to entry tab
+  document.querySelectorAll('#navTabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-tab="entry"]').classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-entry').classList.add('active');
+
+  // set type tab
+  document.querySelectorAll('#typeTabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`[data-type="${type}"]`).classList.add('active');
+  document.querySelectorAll('.entry-form').forEach(f=>f.style.display='none');
+  document.getElementById('form-'+type).style.display='block';
+
+  // set year/month
+  document.getElementById('entryYear').value = r.year;
+  document.getElementById('entryMonth').value = r.month;
+
+  if(type==='water'){
+    document.getElementById('wUsage').value = r.usage;
+    document.getElementById('wPrice').value = r.unitPrice;
+    document.getElementById('wGarbage').value = r.garbageFee||0;
+    calcWater();
+  }else if(type==='electricity'){
+    document.getElementById('eUsage').value = r.usage;
+    document.getElementById('ePrice').value = r.unitPrice;
+    calcElectricity();
+  }else if(type==='gas'){
+    document.getElementById('gUsage').value = r.usage;
+    document.getElementById('gPrice').value = r.unitPrice;
+    calcGas();
+  }
+  toast('编辑模式：修改后点击保存更新记录','info');
+}
+
+// ============================================================
+//  STATISTICS & CHARTS
+// ============================================================
+let chartInstance = null;
+
+// Get all time points sorted chronologically across all data
+function getTimeLabels(filterType){
+  const types = filterType==='all'?['water','electricity','gas']:[filterType];
+  const set = new Set();
+  types.forEach(t=>{
+    appData[t].forEach(r=>{ if(r.year&&r.month) set.add(r.year+'-'+String(r.month).padStart(2,'0')); });
+  });
+  return [...set].sort();
+}
+
+// Latest 2 years that have data
+function getLastTwoYears(){
+  const set = new Set();
+  ['water','electricity','gas'].forEach(t=>appData[t].forEach(r=>{if(r.year) set.add(r.year)}));
+  const sorted = [...set].sort((a,b)=>b-a);
+  return {cur:sorted[0], prev:sorted[1]};
+}
+
+function renderCharts(){
+  const type = document.getElementById('statsType').value;
+  updateStatsSummary(type);
+  const chartType = document.querySelector('#chartTabs .active').dataset.chart;
+  drawChart(chartType, type);
+}
+
+function updateStatsSummary(filterType){
+  let all = [];
+  const types = filterType==='all'?['water','electricity','gas']:[filterType];
+  types.forEach(t=>{
+    appData[t].forEach(r=>{ all.push({...r,_type:t}); });
+  });
+  if(!all.length){
+    document.getElementById('statsSummary').innerHTML = `<div class="stat-item"><div class="num">--</div><div class="lbl">暂无数据</div></div>`;
+    return;
+  }
+  const totalCost = all.reduce((s,r)=>s+(r.total||r.amount||0),0);
+  const totalUsage = all.reduce((s,r)=>s+(r.usage||0),0);
+  const avgCost = totalCost/all.length;
+  const maxRec = all.reduce((a,b)=>(a.amount||0)>(b.amount||0)?a:b,all[0]);
+  const maxMonth = maxRec? (maxRec.year+'年'+maxRec.month+'月') : '--';
+  const years = new Set(all.map(r=>r.year));
+  const yearRange = [...years].sort().join(' ~ ');
+  const html = `
+    <div class="stat-item"><div class="num">${all.length}</div><div class="lbl">总记录数</div></div>
+    <div class="stat-item"><div class="num">${totalCost.toFixed(2)}</div><div class="lbl">总费用(元)</div></div>
+    <div class="stat-item"><div class="num">${avgCost.toFixed(2)}</div><div class="lbl">平均(元/条)</div></div>
+    <div class="stat-item"><div class="num">${totalUsage.toFixed(2)}</div><div class="lbl">总用量</div></div>
+    <div class="stat-item"><div class="num">${maxMonth}</div><div class="lbl">最高月份</div></div>
+    <div class="stat-item"><div class="num">${yearRange}</div><div class="lbl">数据跨度</div></div>
+  `;
+  document.getElementById('statsSummary').innerHTML = html;
+}
+
+document.querySelectorAll('#chartTabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#chartTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCharts();
+  });
+});
+
+document.getElementById('statsType').addEventListener('change', renderCharts);
+
+function collectTimeSeries(filterType, field){
+  const labels = getTimeLabels(filterType);
+  const types = filterType==='all'?['water','electricity','gas']:[filterType];
+  const series = types.map(t=>{
+    const data = labels.map(l=>{
+      const [y,m] = l.split('-').map(Number);
+      const rec = appData[t].find(r=>r.year===y&&r.month===m);
+      return rec ? (field==='usage' ? rec.usage : (rec.total||rec.amount||0)) : null;
+    });
+    return {name:{water:'💧 水',electricity:'⚡ 电',gas:'🔥 气'}[t], type:'line', data,
+      smooth:true, symbol:'circle', symbolSize:5,
+      lineStyle:{width:2}, areaStyle:{opacity:0.06},
+      connectNulls: true};
+  });
+  return {labels, series};
+}
+
+function drawChart(chartType, filterType){
+  const dom = document.getElementById('chartMain');
+  if(chartInstance) chartInstance.dispose();
+  chartInstance = echarts.init(dom, null, {renderer:'canvas'});
+
+  const isAll = filterType==='all';
+  const types = isAll?['water','electricity','gas']:[filterType];
+  const colors = {water:'#00d4ff',electricity:'#7c3aed',gas:'#f59e0b'};
+  const labels = {water:'💧 水',electricity:'⚡ 电',gas:'🔥 气'};
+
+  if(chartType==='trend'){
+    // Line chart: amount trend over all time
+    const {labels:timeLabels, series} = collectTimeSeries(filterType, 'amount');
+    if(!timeLabels.length){
+      chartInstance.setOption({title:{text:'暂无数据',left:'center',top:'center',textStyle:{color:'#5a6a8a',fontSize:16}},backgroundColor:'transparent'});
+      return;
+    }
+    chartInstance.setOption({
+      tooltip:{trigger:'axis',valueFormatter:v=>v!==null?`${v.toFixed(2)} 元`:'--'},
+      legend:{textStyle:{color:'#94a3b8'},data:types.map(t=>labels[t])},
+      grid:{left:50,right:20,bottom:40,top:50},
+      xAxis:{type:'category',data:timeLabels,axisLine:{lineStyle:{color:'rgba(0,212,255,0.1)'}},axisLabel:{color:'#94a3b8',rotate:30}},
+      yAxis:{type:'value',name:'金额(元)',nameTextStyle:{color:'#5a6a8a'},splitLine:{lineStyle:{color:'rgba(0,212,255,0.04)'}},axisLabel:{color:'#94a3b8'}},
+      series, backgroundColor:'transparent', color:types.map(t=>colors[t])
+    });
+  }else if(chartType==='usage'){
+    // Line chart: usage trend over all time (replaced bar chart)
+    const {labels:timeLabels, series} = collectTimeSeries(filterType, 'usage');
+    if(!timeLabels.length){
+      chartInstance.setOption({title:{text:'暂无数据',left:'center',top:'center',textStyle:{color:'#5a6a8a',fontSize:16}},backgroundColor:'transparent'});
+      return;
+    }
+    chartInstance.setOption({
+      tooltip:{trigger:'axis',valueFormatter:v=>v!==null?`${v.toFixed(2)}`:'--'},
+      legend:{textStyle:{color:'#94a3b8'},data:types.map(t=>labels[t])},
+      grid:{left:50,right:20,bottom:40,top:50},
+      xAxis:{type:'category',data:timeLabels,axisLine:{lineStyle:{color:'rgba(0,212,255,0.1)'}},axisLabel:{color:'#94a3b8',rotate:30}},
+      yAxis:{type:'value',name:'用量',nameTextStyle:{color:'#5a6a8a'},splitLine:{lineStyle:{color:'rgba(0,212,255,0.04)'}},axisLabel:{color:'#94a3b8'}},
+      series, backgroundColor:'transparent', color:types.map(t=>colors[t])
+    });
+  }else if(chartType==='pie'){
+    // Pie: cost distribution aggregated across all years
+    const pieData = [];
+    if(isAll){
+      ['water','electricity','gas'].forEach(t=>{
+        const total = appData[t].reduce((s,r)=>s+(r.total||r.amount||0),0);
+        if(total>0) pieData.push({name:labels[t],value:Math.round(total*100)/100});
+      });
+    }else{
+      const t = filterType;
+      appData[t].forEach(r=>{
+        const key = r.year+'年'+r.month+'月';
+        const val = Math.round((r.total||r.amount||0)*100)/100;
+        pieData.push({name:key,value:val});
+      });
+    }
+    if(!pieData.length){
+      chartInstance.setOption({title:{text:'暂无数据',left:'center',top:'center',textStyle:{color:'#5a6a8a',fontSize:16}},backgroundColor:'transparent'});
+      return;
+    }
+    chartInstance.setOption({
+      tooltip:{formatter:p=>`${p.name}: ${p.value} 元 (${p.percent}%)`},
+      series:[{
+        type:'pie',radius:['30%','60%'],center:['50%','50%'],
+        label:{color:'#c8d6e5',fontSize:12},
+        labelLine:{lineStyle:{color:'rgba(0,212,255,0.2)'}},
+        data:pieData,
+        emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,0.3)'}},
+        itemStyle:{borderColor:'rgba(6,11,24,0.8)',borderWidth:2}
+      }],
+      backgroundColor:'transparent',
+      color:isAll?['#00d4ff','#7c3aed','#f59e0b']:['#00d4ff','#7c3aed','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16','#eab308']
+    });
+  }else if(chartType==='yoy'){
+    // YoY: auto-compare latest 2 years with data
+    const {cur:curYear, prev:prevYear} = getLastTwoYears();
+    if(!curYear){
+      chartInstance.setOption({title:{text:'暂无数据',left:'center',top:'center',textStyle:{color:'#5a6a8a',fontSize:16}},backgroundColor:'transparent'});
+      return;
+    }
+    if(!prevYear){
+      chartInstance.setOption({title:{text:'仅有一年数据，无法对比',left:'center',top:'center',textStyle:{color:'#5a6a8a',fontSize:16}},backgroundColor:'transparent'});
+      return;
+    }
+    const months = Array.from({length:12},(_,i)=>i+1);
+    const monthLabels = months.map(m=>m+'月');
+    const curColor = types.map(t=>colors[t]);
+    const prevColor = types.map(t=>adjustColor(colors[t],-50));
+    const series = [];
+    types.forEach(t=>{
+      const curData = months.map(m=>{
+        const rec = appData[t].find(r=>r.year===curYear&&r.month===m);
+        return rec?(rec.total||rec.amount||0):0;
+      });
+      const prevData = months.map(m=>{
+        const rec = appData[t].find(r=>r.year===prevYear&&r.month===m);
+        return rec?(rec.total||rec.amount||0):0;
+      });
+      series.push({name:labels[t]+' '+curYear,type:'line',data:curData,smooth:true,symbol:'circle',symbolSize:5,lineStyle:{width:2}});
+      series.push({name:labels[t]+' '+prevYear,type:'line',data:prevData,smooth:true,symbol:'diamond',symbolSize:5,lineStyle:{width:2,type:'dashed'}});
+    });
+    const palette = [];
+    types.forEach(t=>{palette.push(colors[t]); palette.push(adjustColor(colors[t],-50));});
+    chartInstance.setOption({
+      title:{text:curYear+' vs '+prevYear+' 同比对比',textStyle:{color:'#94a3b8',fontSize:14},left:'center',top:5},
+      tooltip:{trigger:'axis',valueFormatter:v=>`${v.toFixed(2)} 元`},
+      legend:{textStyle:{color:'#94a3b8'},data:series.map(s=>({name:s.name,icon:'roundRect'})),top:30},
+      grid:{left:50,right:20,bottom:30,top:80},
+      xAxis:{type:'category',data:monthLabels,axisLine:{lineStyle:{color:'rgba(0,212,255,0.1)'}},axisLabel:{color:'#94a3b8'}},
+      yAxis:{type:'value',name:'金额(元)',nameTextStyle:{color:'#5a6a8a'},splitLine:{lineStyle:{color:'rgba(0,212,255,0.04)'}},axisLabel:{color:'#94a3b8'}},
+      series,backgroundColor:'transparent',color:palette
+    });
+  }
+}
+
+function adjustColor(hex, amt){
+  let c = hex.replace('#','');
+  if(c.length===3) c=c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  let r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+  r=Math.max(0,Math.min(255,r+amt));g=Math.max(0,Math.min(255,g+amt));b=Math.max(0,Math.min(255,b+amt));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+//  DATA MANAGEMENT
+// ============================================================
+function exportData(){
+  const json = JSON.stringify(appData,null,2);
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const dateStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  a.download = `中海原山水电气数据_${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('数据导出成功','success');
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const isExcel = /\.xlsx?$/i.test(file.name);
+  if(isExcel){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        const imported = parseExcelWorkbook(wb);
+        const total = imported.water.length+imported.electricity.length+imported.gas.length;
+        if(!total){
+          toast('未在 Excel 中解析到有效记录，请检查模板格式','error');
+          return;
+        }
+        showModal('导入 Excel 数据',`解析到 ${total} 条记录（水 ${imported.water.length} / 电 ${imported.electricity.length} / 气 ${imported.gas.length}），将追加到现有数据中，确定继续？`,()=>{
+          imported.water.forEach(r=>addRecord('water',r));
+          imported.electricity.forEach(r=>addRecord('electricity',r));
+          imported.gas.forEach(r=>addRecord('gas',r));
+          toast('Excel 数据导入成功','success');
+          updateMgmtSummary();
+          renderHistory();
+        });
+      }catch(err){
+        toast('Excel 导入失败：'+err.message,'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }else{
+    // JSON import
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const data = JSON.parse(e.target.result);
+        if(!data.water||!data.electricity||!data.gas){
+          throw new Error('数据格式不正确，缺少 water/electricity/gas 字段');
+        }
+        showModal('导入 JSON 数据','将用导入数据覆盖现有数据，确定继续？',()=>{
+          appData = data;
+          saveData();
+          toast('JSON 数据导入成功','success');
+          updateMgmtSummary();
+          renderHistory();
+        });
+      }catch(err){
+        toast('导入失败：'+err.message,'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+  event.target.value = '';
+}
+
+function parseExcelWorkbook(wb){
+  const result = {water:[],electricity:[],gas:[]};
+  const sheetNames = wb.SheetNames;
+  const findSheet = (names)=>{
+    for(const n of names){
+      if(sheetNames.includes(n)) return wb.Sheets[n];
+    }
+    return null;
+  };
+  // parse water sheet
+  const wsWater = findSheet(['水费','水','water']);
+  if(wsWater){
+    const rows = XLSX.utils.sheet_to_json(wsWater, {header:1, defval:''});
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r[0]&&!r[1]) continue;
+      const year = parseInt(r[0])||0;
+      const month = parseInt(r[1])||0;
+      if(year&&month){
+        const usage = parseFloat(r[2])||0;
+        const unitPrice = parseFloat(r[3])||0;
+        const garbageFee = parseFloat(r[4])||0;
+        result.water.push({
+          year, month, usage, unitPrice,
+          amount: +(usage*unitPrice).toFixed(2),
+          garbageFee,
+          total: +(usage*unitPrice+garbageFee).toFixed(2)
+        });
+      }
+    }
+  }
+  // parse electricity sheet
+  const wsElec = findSheet(['电费','电','electricity']);
+  if(wsElec){
+    const rows = XLSX.utils.sheet_to_json(wsElec, {header:1, defval:''});
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r[0]&&!r[1]) continue;
+      const year = parseInt(r[0])||0;
+      const month = parseInt(r[1])||0;
+      if(year&&month){
+        const usage = parseFloat(r[2])||0;
+        const unitPrice = parseFloat(r[3])||0;
+        result.electricity.push({
+          year, month, usage, unitPrice,
+          amount: +(usage*unitPrice).toFixed(2)
+        });
+      }
+    }
+  }
+  // parse gas sheet
+  const wsGas = findSheet(['燃气费','燃气','气','gas']);
+  if(wsGas){
+    const rows = XLSX.utils.sheet_to_json(wsGas, {header:1, defval:''});
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r[0]&&!r[1]) continue;
+      const year = parseInt(r[0])||0;
+      const month = parseInt(r[1])||0;
+      if(year&&month){
+        const usage = parseFloat(r[2])||0;
+        const unitPrice = parseFloat(r[3])||0;
+        result.gas.push({
+          year, month, usage, unitPrice,
+          amount: +(usage*unitPrice).toFixed(2)
+        });
+      }
+    }
+  }
+  return result;
+}
+
+function downloadTemplate(){
+  const wb = XLSX.utils.book_new();
+  // water sheet
+  const wData = [
+    ['年份','月份','用量(吨)','单价(元/吨)','垃圾处理费(元)'],
+    [2026,1,'','',''],
+    [2026,2,'','','']
+  ];
+  const wsWater = XLSX.utils.aoa_to_sheet(wData);
+  wsWater['!cols'] = [{wch:8},{wch:6},{wch:10},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsWater, '水');
+
+  // electricity sheet
+  const eData = [
+    ['年份','月份','用量(度)','单价(元/度)'],
+    [2026,1,'',''],
+    [2026,2,'','']
+  ];
+  const wsElec = XLSX.utils.aoa_to_sheet(eData);
+  wsElec['!cols'] = [{wch:8},{wch:6},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsElec, '电');
+
+  // gas sheet
+  const gData = [
+    ['年份','月份','用量(m³)','单价(元/m³)'],
+    [2026,1,'',''],
+    [2026,2,'','']
+  ];
+  const wsGas = XLSX.utils.aoa_to_sheet(gData);
+  wsGas['!cols'] = [{wch:8},{wch:6},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsGas, '气');
+
+  // notes sheet
+  const nData = [
+    ['📌 使用说明'],
+    [''],
+    ['1. 请勿修改表头（第一行）'],
+    ['2. 每个Sheet对应一种类型：水 / 电 / 气'],
+    ['3. 第一列"年份"，第二列"月份"，后续为用量和单价'],
+    ['4. "用量"和"单价"列留空或填0则该行被跳过'],
+    ['5. 垃圾处理费仅水费需要填写'],
+    ['6. 金额将根据用量×单价自动计算'],
+    ['7. Sheet名称支持：水/水费/water, 电/电费/electricity, 气/燃气/gas'],
+    [''],
+    ['示例：填入一笔水费记录 -> 2026 | 1 | 12.5 | 3.5 | 8']
+  ];
+  const wsNotes = XLSX.utils.aoa_to_sheet(nData);
+  wsNotes['!cols'] = [{wch:60}];
+  XLSX.utils.book_append_sheet(wb, wsNotes, '说明');
+
+  const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '中海原山水电气导入模板.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('模板已下载','success');
+}
+
+function confirmClear(){
+  showModal('⚠️ 清空数据','确定要清空所有消费数据吗？此操作不可恢复！',()=>{
+    appData = {water:[],electricity:[],gas:[]};
+    saveData();
+    toast('所有数据已清空','info');
+    updateMgmtSummary();
+  });
+}
+
+function updateMgmtSummary(){
+  const total = appData.water.length+appData.electricity.length+appData.gas.length;
+  if(total===0){
+    document.getElementById('dataSummary').textContent = '暂无数据';
+    return;
+  }
+  const years = new Set();
+  appData.water.forEach(r=>years.add(r.year));
+  appData.electricity.forEach(r=>years.add(r.year));
+  appData.gas.forEach(r=>years.add(r.year));
+  const sortedYears = [...years].sort();
+  document.getElementById('dataSummary').textContent =
+    `共 ${total} 条记录 · ${sortedYears.length} 年数据 · ${sortedYears.join(', ')}`;
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function populateYearSelects(){
+  const curYear = new Date().getFullYear();
+  const years = [];
+  for(let y=curYear; y>=2020; y--) years.push(y);
+  // add any years from data
+  ['water','electricity','gas'].forEach(t=>{
+    appData[t].forEach(r=>{if(r.year&&!years.includes(r.year))years.push(r.year)});
+  });
+  years.sort((a,b)=>b-a);
+  const selects = ['entryYear','histYear'];
+  selects.forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = id==='histYear'?'<option value="">全部年份</option>':'';
+    years.forEach(y=>{
+      sel.innerHTML += `<option value="${y}">${y}年</option>`;
+    });
+    if(currentVal) sel.value = currentVal;
+    else if(curYear) sel.value = curYear;
+  });
+}
+
+// history filter listeners
+document.getElementById('histYear').addEventListener('change', renderHistory);
+document.getElementById('histType').addEventListener('change', renderHistory);
+
+// resize chart
+window.addEventListener('resize',()=>{
+  if(chartInstance) chartInstance.resize();
+});
+
+// ============================================================
+//  BOOT
+// ============================================================
+loadData();
+populateYearSelects();
+updateMgmtSummary();
+// initial chart render for stats tab
+setTimeout(()=>{ try{ renderCharts(); }catch(e){} }, 100);
+toast('系统已就绪','info');
+</script>
+
+<!-- ===== Particle background animation ===== -->
+<canvas id="particleCanvas"></canvas>
+<script>
+(function(){
+  const cvs = document.getElementById('particleCanvas');
+  const ctx = cvs.getContext('2d');
+  let W, H;
+  let mouse = {x:-9999,y:-9999};
+  let particles = [];
+
+  function resize(){
+    W=cvs.width=window.innerWidth;
+    H=cvs.height=window.innerHeight;
+  }
+  window.addEventListener('resize',resize);
+  resize();
+
+  class Particle{
+    constructor(){this.reset()}
+    reset(){
+      this.x=Math.random()*W; this.y=Math.random()*H;
+      this.vx=(Math.random()-0.5)*0.4; this.vy=(Math.random()-0.5)*0.4;
+      this.r=Math.random()*1.8+0.6;
+      this.a=Math.random()*0.5+0.3;
+      this.pulse=Math.random()*Math.PI*2;
+      this.pulseSpeed=0.01+Math.random()*0.02;
+    }
+    update(){
+      const dx=this.x-mouse.x, dy=this.y-mouse.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<120){
+        const force=(120-dist)/120*0.6;
+        this.vx+=dx/dist*force;
+        this.vy+=dy/dist*force;
+      }
+      this.x+=this.vx; this.y+=this.vy;
+      this.pulse+=this.pulseSpeed;
+      if(this.x<0||this.x>W) this.vx*=-1;
+      if(this.y<0||this.y>H) this.vy*=-1;
+      this.x=Math.max(0,Math.min(W,this.x));
+      this.y=Math.max(0,Math.min(H,this.y));
+      this.vx*=0.995; this.vy*=0.995;
+    }
+    draw(){
+      const pulseA=this.a*(0.7+0.3*Math.sin(this.pulse));
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,212,255,${pulseA})`;
+      ctx.fill();
+      if(this.r>1.5){
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.r*3,0,Math.PI*2);
+        ctx.fillStyle=`rgba(0,212,255,${pulseA*0.12})`;
+        ctx.fill();
+      }
+    }
+  }
+
+  for(let i=0;i<65;i++) particles.push(new Particle());
+  for(let i=0;i<25;i++){
+    const p=new Particle();
+    p.r=Math.random()*0.8+0.3;
+    p.a=Math.random()*0.3+0.1;
+    particles.push(p);
+  }
+
+  function drawConnections(){
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x;
+        const dy=particles[i].y-particles[j].y;
+        const dist=Math.hypot(dx,dy);
+        const maxDist=Math.min(W,H)*0.18;
+        if(dist<maxDist){
+          const a=(1-dist/maxDist)*0.2;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,212,255,${a})`;
+          ctx.lineWidth=0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function animate(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{p.update();p.draw();});
+    drawConnections();
+    if(Math.random()<0.04){
+      const p=particles[Math.floor(Math.random()*particles.length)];
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*6,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,212,255,0.06)';
+      ctx.fill();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+  document.addEventListener('touchmove',e=>{const t=e.touches[0];if(t){mouse.x=t.clientX;mouse.y=t.clientY}});
+  document.addEventListener('touchend',()=>{mouse.x=-9999;mouse.y=-9999});
+  document.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999});
+  animate();
+})();
+</script>
+</body>
+</html>
