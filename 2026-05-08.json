@@ -1,0 +1,437 @@
+{
+  "water": [
+    {
+      "year": 2022,
+      "month": 2,
+      "usage": 26,
+      "unitPrice": 3.04,
+      "amount": 79.04,
+      "garbageFee": 5,
+      "total": 84.04,
+      "id": "mov7qsovx0l5dz",
+      "frozen": false
+    },
+    {
+      "year": 2022,
+      "month": 4,
+      "usage": 23,
+      "unitPrice": 3.04,
+      "amount": 69.92,
+      "garbageFee": 5,
+      "total": 74.92,
+      "id": "mov7qsow1ekw98",
+      "frozen": false
+    },
+    {
+      "year": 2022,
+      "month": 6,
+      "usage": 22.917763157894736,
+      "unitPrice": 3.04,
+      "amount": 69.67,
+      "garbageFee": 5,
+      "total": 74.67,
+      "id": "mov7qsox0j1j77",
+      "frozen": false
+    },
+    {
+      "year": 2022,
+      "month": 8,
+      "usage": 23.914473684210527,
+      "unitPrice": 3.04,
+      "amount": 72.7,
+      "garbageFee": 5,
+      "total": 77.7,
+      "id": "mov7qsoxakc8gz",
+      "frozen": false
+    },
+    {
+      "year": 2022,
+      "month": 10,
+      "usage": 22.917763157894736,
+      "unitPrice": 3.04,
+      "amount": 69.67,
+      "garbageFee": 5,
+      "total": 74.67,
+      "id": "mov7qsox4eongk",
+      "frozen": false
+    },
+    {
+      "year": 2022,
+      "month": 12,
+      "usage": 20.924342105263158,
+      "unitPrice": 3.04,
+      "amount": 63.61,
+      "garbageFee": 5,
+      "total": 68.61,
+      "id": "mov7qsoxly8cqx",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 2,
+      "usage": 23.999999999999996,
+      "unitPrice": 3.04,
+      "amount": 72.96,
+      "garbageFee": 5,
+      "total": 77.96,
+      "id": "mov7qsoxsnjc6u",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 4,
+      "usage": 22,
+      "unitPrice": 3.0399999999999996,
+      "amount": 66.88,
+      "garbageFee": 5,
+      "total": 71.88,
+      "id": "mov7qsoxggacey",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 6,
+      "usage": 23.914473684210527,
+      "unitPrice": 3.04,
+      "amount": 72.7,
+      "garbageFee": 5,
+      "total": 77.7,
+      "id": "mov7qsoxllvmu3",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 8,
+      "usage": 23.914473684210527,
+      "unitPrice": 3.04,
+      "amount": 72.7,
+      "garbageFee": 5,
+      "total": 77.7,
+      "id": "mov7qsoxap712z",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 10,
+      "usage": 23.914473684210527,
+      "unitPrice": 3.04,
+      "amount": 72.7,
+      "garbageFee": 5,
+      "total": 77.7,
+      "id": "mov7qsoxeow44v",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 12,
+      "usage": 22.917763157894736,
+      "unitPrice": 3.04,
+      "amount": 69.67,
+      "garbageFee": 5,
+      "total": 74.67,
+      "id": "mov7qsoxhpgwvp",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 2,
+      "usage": 21,
+      "unitPrice": 3.04,
+      "amount": 63.84,
+      "garbageFee": 5,
+      "total": 68.84,
+      "id": "mov7qsoxa9jdi7",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 4,
+      "usage": 30,
+      "unitPrice": 3.04,
+      "amount": 91.2,
+      "garbageFee": 5,
+      "total": 96.2,
+      "id": "mov7qsoy5k8j4r",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 6,
+      "usage": 20,
+      "unitPrice": 3.04,
+      "amount": 60.8,
+      "garbageFee": 5,
+      "total": 65.8,
+      "id": "mov7qsoylicnpf",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 8,
+      "usage": 23.999999999999996,
+      "unitPrice": 3.04,
+      "amount": 72.96,
+      "garbageFee": 5,
+      "total": 77.96,
+      "id": "mov7qsoyrz9duv",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 10,
+      "usage": 25,
+      "unitPrice": 3.04,
+      "amount": 76,
+      "garbageFee": 5,
+      "total": 81,
+      "id": "mov7qsoy2wu9zb",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 12,
+      "usage": 26,
+      "unitPrice": 3.04,
+      "amount": 79.04,
+      "garbageFee": 5,
+      "total": 84.04,
+      "id": "mov7qsoy9ujzv1",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 2,
+      "usage": 31,
+      "unitPrice": 3.2851612903225806,
+      "amount": 101.84,
+      "garbageFee": 5,
+      "total": 106.84,
+      "id": "mov7qsoy0rhuc5",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 4,
+      "usage": 23,
+      "unitPrice": 3.42,
+      "amount": 78.66,
+      "garbageFee": 5,
+      "total": 83.66,
+      "id": "mov7qsoyj998t4",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 6,
+      "usage": 30,
+      "unitPrice": 3.42,
+      "amount": 102.6,
+      "garbageFee": 5,
+      "total": 107.6,
+      "id": "mov7qsoyd1tj6w",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 8,
+      "usage": 39,
+      "unitPrice": 3.42,
+      "amount": 133.38,
+      "garbageFee": 5,
+      "total": 138.38,
+      "id": "mov7qsoye3btu8",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 10,
+      "usage": 35,
+      "unitPrice": 3.42,
+      "amount": 119.7,
+      "garbageFee": 5,
+      "total": 124.7,
+      "id": "mov7qsoyhwxps0",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 12,
+      "usage": 32,
+      "unitPrice": 3.42,
+      "amount": 109.44,
+      "garbageFee": 5,
+      "total": 114.44,
+      "id": "mov7qsoyahe1ej",
+      "frozen": false
+    },
+    {
+      "year": 2026,
+      "month": 2,
+      "usage": 29,
+      "unitPrice": 3.4200000000000004,
+      "amount": 99.18,
+      "garbageFee": 5,
+      "total": 104.18,
+      "id": "mov7qsoyht6l6b",
+      "frozen": false
+    },
+    {
+      "year": 2026,
+      "month": 4,
+      "usage": 34,
+      "unitPrice": 3.42,
+      "amount": 116.28,
+      "garbageFee": 5,
+      "total": 121.28,
+      "id": "mov7qsoyoqxymb",
+      "frozen": false
+    }
+  ],
+  "electricity": [],
+  "gas": [
+    {
+      "year": 2023,
+      "month": 10,
+      "usage": 30,
+      "unitPrice": 3.03,
+      "amount": 90.9,
+      "id": "mov7qsoywsp97y",
+      "frozen": false
+    },
+    {
+      "year": 2023,
+      "month": 12,
+      "usage": 62,
+      "unitPrice": 3.03,
+      "amount": 187.86,
+      "id": "mov7qsoy20ou2m",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 2,
+      "usage": 85,
+      "unitPrice": 3.03,
+      "amount": 257.55,
+      "id": "mov7qsoyhjzthi",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 4,
+      "usage": 87,
+      "unitPrice": 3.03,
+      "amount": 263.61,
+      "id": "mov7qsoyvq4tzx",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 6,
+      "usage": 45,
+      "unitPrice": 3.03,
+      "amount": 136.35,
+      "id": "mov7qsoylm1jxy",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 8,
+      "usage": 32,
+      "unitPrice": 3.03,
+      "amount": 96.96,
+      "id": "mov7qsoyszve2r",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 10,
+      "usage": 25,
+      "unitPrice": 3.03,
+      "amount": 75.75,
+      "id": "mov7qsoyy2splg",
+      "frozen": false
+    },
+    {
+      "year": 2024,
+      "month": 12,
+      "usage": 58,
+      "unitPrice": 3.03,
+      "amount": 175.74,
+      "id": "mov7qsoyfsjt05",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 2,
+      "usage": 100,
+      "unitPrice": 3.03,
+      "amount": 303,
+      "id": "mov7qsoypwct73",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 4,
+      "usage": 84,
+      "unitPrice": 3.03,
+      "amount": 254.52,
+      "id": "mov7qsoyubo47n",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 6,
+      "usage": 54,
+      "unitPrice": 3.03,
+      "amount": 163.62,
+      "id": "mov7qsoyh8z0bk",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 8,
+      "usage": 38,
+      "unitPrice": 3.03,
+      "amount": 115.14,
+      "id": "mov7qsoyqu1pxe",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 10,
+      "usage": 37,
+      "unitPrice": 3.03,
+      "amount": 112.11,
+      "id": "mov7qsoyzx9ogs",
+      "frozen": false
+    },
+    {
+      "year": 2025,
+      "month": 12,
+      "usage": 63,
+      "unitPrice": 3.03,
+      "amount": 190.89,
+      "id": "mov7qsoygw644u",
+      "frozen": false
+    },
+    {
+      "year": 2026,
+      "month": 2,
+      "usage": 92,
+      "unitPrice": 3.03,
+      "amount": 278.76,
+      "id": "mov7qsozr0wl6h",
+      "frozen": false
+    },
+    {
+      "year": 2026,
+      "month": 4,
+      "usage": 104,
+      "unitPrice": 3.03,
+      "amount": 315.12,
+      "id": "mov7qsoz8ki3nl",
+      "frozen": false
+    }
+  ]
+}
